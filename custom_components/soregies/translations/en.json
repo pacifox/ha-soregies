@@ -1,0 +1,123 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to the Sorégies customer portal",
+        "description": "Open {portal}, request a sign-in link, then paste the full address you receive by email here (or just the `access_token` it contains).\n\nYour password is never requested nor stored. The link stays valid for ten days; Home Assistant will ask for a fresh one afterwards.",
+        "data": {
+          "access_token": "Sign-in link address, or token"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Renew Sorégies access",
+        "description": "The previous sign-in link has expired. Request a new one at {portal} and paste it here. Data already imported is kept.",
+        "data": {
+          "access_token": "Sign-in link address, or token"
+        }
+      }
+    },
+    "error": {
+      "invalid_token": "No recognisable token in this text. Paste the full address of the link you received by email.",
+      "invalid_auth": "The portal rejected this token; it has most likely expired. Request a new sign-in link.",
+      "wrong_account": "This link belongs to a different delivery point. Use a link for the contract already configured.",
+      "cannot_connect": "The Sorégies portal is unreachable right now."
+    },
+    "abort": {
+      "already_configured": "This contract is already configured.",
+      "reauth_successful": "Access has been renewed.",
+      "reauth_failed": "The entry to renew could not be found."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Sorégies settings",
+        "description": "History is imported as `soregies:` statistics. They are not wired into the Energy dashboard automatically, so they cannot add up on top of a meter you already declared.",
+        "data": {
+          "history_months": "History depth to import",
+          "cost_with_vat": "Compute costs including VAT"
+        },
+        "data_description": {
+          "history_months": "Number of months read back during a full import. The portal never returns data from before the contract started.",
+          "cost_with_vat": "Turn this off for amounts excluding tax."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "last_day": {
+        "name": "Yesterday's consumption"
+      },
+      "month_to_date": {
+        "name": "Month-to-date consumption"
+      },
+      "previous_month": {
+        "name": "Previous month consumption"
+      },
+      "year_to_date": {
+        "name": "Year-to-date consumption"
+      },
+      "peak_share": {
+        "name": "Peak-hours share"
+      },
+      "offpeak_share": {
+        "name": "Off-peak share"
+      },
+      "average_price": {
+        "name": "Average price per kWh"
+      },
+      "price_peak": {
+        "name": "Peak-hours price per kWh"
+      },
+      "price_offpeak": {
+        "name": "Off-peak price per kWh"
+      },
+      "subscribed_power": {
+        "name": "Subscribed power"
+      },
+      "subscription_cost": {
+        "name": "Yearly standing charge"
+      },
+      "meter_index": {
+        "name": "Meter index"
+      },
+      "invoiced_to": {
+        "name": "Consumption invoiced up to"
+      },
+      "contract_status": {
+        "name": "Contract status"
+      },
+      "token_expires_in": {
+        "name": "Sign-in link expiry"
+      }
+    }
+  },
+  "services": {
+    "import_history": {
+      "name": "Re-import history",
+      "description": "Reads daily consumption month by month and rewrites the matching statistics. No risk of duplicates: existing points are replaced.",
+      "fields": {
+        "entry_id": {
+          "name": "Contract",
+          "description": "Identifier of the entry to re-import. All entries when left empty."
+        },
+        "months": {
+          "name": "Depth",
+          "description": "Number of months to read back. Defaults to the configured value."
+        }
+      }
+    }
+  },
+  "issues": {
+    "token_expiring": {
+      "title": "The Sorégies sign-in link expires soon",
+      "fix_flow": {
+        "abort": {
+          "issue_ignored": "Alert ignored."
+        }
+      },
+      "description": "Access to the Sorégies customer portal expires in {days} day(s), on {expiry}. Without renewal, history will stop updating.\n\nTo renew: sign in at soregies.fr, open “Suivi de consommation”, then copy the full page address and paste it into Home Assistant."
+    }
+  }
+}

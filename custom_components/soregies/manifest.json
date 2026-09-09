@@ -1,0 +1,18 @@
+{
+  "domain": "soregies",
+  "name": "Sorégies",
+  "codeowners": [
+    "@pacifox"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "recorder"
+  ],
+  "documentation": "https://github.com/pacifox/ha-soregies",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/pacifox/ha-soregies/issues",
+  "quality_scale": "silver",
+  "requirements": [],
+  "version": "1.0.0"
+}

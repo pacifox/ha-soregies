@@ -1,0 +1,123 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connexion à l'espace client Sorégies",
+        "description": "Ouvrez {portal}, demandez un lien de connexion, puis collez ici l'adresse complète reçue par courriel (ou seulement le jeton `access_token` qu'elle contient).\n\nVotre mot de passe n'est jamais demandé ni conservé. Le lien reste valable dix jours ; Home Assistant vous en redemandera un ensuite.",
+        "data": {
+          "access_token": "Adresse du lien de connexion, ou jeton"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Renouveler l'accès Sorégies",
+        "description": "Le lien de connexion précédent a expiré. Demandez-en un nouveau sur {portal} et collez-le ici. Les données déjà importées sont conservées.",
+        "data": {
+          "access_token": "Adresse du lien de connexion, ou jeton"
+        }
+      }
+    },
+    "error": {
+      "invalid_token": "Ce texte ne contient pas de jeton reconnaissable. Collez l'adresse complète du lien reçu par courriel.",
+      "invalid_auth": "Le portail a refusé ce jeton : il est probablement expiré. Demandez un nouveau lien de connexion.",
+      "wrong_account": "Ce lien correspond à un autre point de livraison. Utilisez un lien du contrat déjà configuré.",
+      "cannot_connect": "Le portail Sorégies est injoignable pour le moment."
+    },
+    "abort": {
+      "already_configured": "Ce contrat est déjà configuré.",
+      "reauth_successful": "L'accès a été renouvelé.",
+      "reauth_failed": "L'entrée à renouveler n'a pas été retrouvée."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Réglages Sorégies",
+        "description": "L'historique est importé sous forme de statistiques `soregies:`. Elles ne sont pas rattachées d'office au tableau de bord Énergie, pour ne pas s'additionner à un compteur déjà déclaré.",
+        "data": {
+          "history_months": "Profondeur d'historique à importer",
+          "cost_with_vat": "Calculer les coûts TVA comprise"
+        },
+        "data_description": {
+          "history_months": "Nombre de mois relus lors d'un import complet. Le portail ne remonte pas avant le début du contrat.",
+          "cost_with_vat": "Désactivez cette option pour obtenir des montants hors taxes."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "last_day": {
+        "name": "Consommation de la veille"
+      },
+      "month_to_date": {
+        "name": "Consommation du mois en cours"
+      },
+      "previous_month": {
+        "name": "Consommation du mois précédent"
+      },
+      "year_to_date": {
+        "name": "Consommation de l'année en cours"
+      },
+      "peak_share": {
+        "name": "Part en heures pleines"
+      },
+      "offpeak_share": {
+        "name": "Part en heures creuses"
+      },
+      "average_price": {
+        "name": "Prix moyen du kWh"
+      },
+      "price_peak": {
+        "name": "Prix du kWh en heures pleines"
+      },
+      "price_offpeak": {
+        "name": "Prix du kWh en heures creuses"
+      },
+      "subscribed_power": {
+        "name": "Puissance souscrite"
+      },
+      "subscription_cost": {
+        "name": "Abonnement annuel"
+      },
+      "meter_index": {
+        "name": "Index du compteur"
+      },
+      "invoiced_to": {
+        "name": "Consommation facturée jusqu'au"
+      },
+      "contract_status": {
+        "name": "État du contrat"
+      },
+      "token_expires_in": {
+        "name": "Expiration du lien de connexion"
+      }
+    }
+  },
+  "services": {
+    "import_history": {
+      "name": "Réimporter l'historique",
+      "description": "Relit la consommation quotidienne mois par mois et réécrit les statistiques correspondantes. Sans risque de doublon : les points existants sont remplacés.",
+      "fields": {
+        "entry_id": {
+          "name": "Contrat",
+          "description": "Identifiant de l'entrée à réimporter. Toutes les entrées si le champ est vide."
+        },
+        "months": {
+          "name": "Profondeur",
+          "description": "Nombre de mois à relire. La valeur des réglages est utilisée par défaut."
+        }
+      }
+    }
+  },
+  "issues": {
+    "token_expiring": {
+      "title": "Le lien de connexion Sorégies expire bientôt",
+      "fix_flow": {
+        "abort": {
+          "issue_ignored": "Alerte ignorée."
+        }
+      },
+      "description": "L'accès à l'espace client Sorégies expire dans {days} jour(s), le {expiry}. Sans renouvellement, l'historique cessera d'être mis à jour.\n\nPour renouveler : connectez-vous sur soregies.fr, ouvrez « Suivi de consommation », puis copiez l'adresse complète de la page et collez-la dans Home Assistant."
+    }
+  }
+}

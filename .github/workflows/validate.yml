@@ -1,0 +1,27 @@
+name: Validation
+
+on:
+  push:
+  pull_request:
+  schedule:
+    # Une intégration qui parle à une API non documentée peut casser sans
+    # qu'aucun commit n'ait eu lieu : on revalide chaque semaine.
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+
+jobs:
+  hacs:
+    name: HACS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hacs/action@main
+        with:
+          category: integration
+
+  hassfest:
+    name: hassfest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: home-assistant/actions/hassfest@master
