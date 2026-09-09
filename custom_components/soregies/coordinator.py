@@ -320,7 +320,7 @@ class SoregiesCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if not entries:
             return None
         start = entries[0].get("start")
-        if isinstance(start, (int, float)):
+        if isinstance(start, int | float):
             return dt_util.utc_from_timestamp(start)
         return start
 

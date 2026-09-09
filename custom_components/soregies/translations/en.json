@@ -113,11 +113,16 @@
     "token_expiring": {
       "title": "The Sorégies sign-in link expires soon",
       "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Renew Sorégies access",
+            "description": "Access to the customer portal expires in {days} day(s), on {expiry}. Without renewal, history will stop updating.\n\nSign in at soregies.fr, open “Suivi de consommation”, copy the full page address, then confirm here: Home Assistant will ask you to paste it."
+          }
+        },
         "abort": {
           "issue_ignored": "Alert ignored."
         }
-      },
-      "description": "Access to the Sorégies customer portal expires in {days} day(s), on {expiry}. Without renewal, history will stop updating.\n\nTo renew: sign in at soregies.fr, open “Suivi de consommation”, then copy the full page address and paste it into Home Assistant."
+      }
     }
   }
 }

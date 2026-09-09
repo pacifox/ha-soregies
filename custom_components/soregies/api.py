@@ -110,7 +110,7 @@ def extract_token(value: str) -> str:
 def token_expiry(token: str) -> datetime | None:
     """Échéance d'un jeton, si elle est annoncée."""
     exp = decode_jwt_payload(token).get("exp")
-    if not isinstance(exp, (int, float)):
+    if not isinstance(exp, int | float):
         return None
     return datetime.fromtimestamp(exp, tz=UTC)
 

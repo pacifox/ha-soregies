@@ -63,6 +63,12 @@ et par pas quotidien. Le tableau Énergie sera juste au mois, plat à l'heure.
 2. Adresse : `https://github.com/pacifox/ha-soregies`, catégorie **Integration**
 3. Installez « Sorégies », puis redémarrez Home Assistant
 
+Le dépôt n'est pas (encore) référencé dans la boutique HACS par défaut : cela
+suppose une inscription dans [`hacs/default`](https://github.com/hacs/default)
+et une déclaration de marque dans
+[`home-assistant/brands`](https://github.com/home-assistant/brands). En
+attendant, la voie du dépôt personnalisé ci-dessus fonctionne à l'identique.
+
 ### À la main
 
 Copiez `custom_components/soregies/` dans le dossier `custom_components/` de
@@ -240,6 +246,21 @@ doublon : les points existants sont remplacés, pas ajoutés.
   réellement tarifée, plutôt que valorisés à zéro.
 * **Renouvellement du jeton** — dix jours, sans automatisation possible : le
   portail ne propose aucune authentification par identifiants.
+
+## Contribuer
+
+```bash
+pip install -r requirements-test.txt
+ruff check custom_components/soregies tests
+ruff format --check custom_components/soregies tests scripts
+pytest -q
+```
+
+`custom_components/soregies/api.py` ne dépend que d'`aiohttp` : la couche qui
+dialogue avec le portail se teste sans installer Home Assistant, et
+`tests/conftest.py` vérifie que cette propriété tient. Les visuels de marque
+sont générés par `scripts/make_brand_assets.py` — un repère neutre, pas une
+reprise du logo Sorégies, ce projet n'étant pas officiel.
 
 ## Licence
 

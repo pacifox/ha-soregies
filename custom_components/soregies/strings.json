@@ -113,11 +113,16 @@
     "token_expiring": {
       "title": "Le lien de connexion Sorégies expire bientôt",
       "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Renouveler l'accès Sorégies",
+            "description": "L'accès à l'espace client expire dans {days} jour(s), le {expiry}. Sans renouvellement, l'historique cessera d'être mis à jour.\n\nConnectez-vous sur soregies.fr, ouvrez « Suivi de consommation », copiez l'adresse complète de la page, puis validez ici : Home Assistant vous demandera de la coller."
+          }
+        },
         "abort": {
           "issue_ignored": "Alerte ignorée."
         }
-      },
-      "description": "L'accès à l'espace client Sorégies expire dans {days} jour(s), le {expiry}. Sans renouvellement, l'historique cessera d'être mis à jour.\n\nPour renouveler : connectez-vous sur soregies.fr, ouvrez « Suivi de consommation », puis copiez l'adresse complète de la page et collez-la dans Home Assistant."
+      }
     }
   }
 }
