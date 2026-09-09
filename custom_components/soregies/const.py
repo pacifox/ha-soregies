@@ -15,6 +15,8 @@ API_ROOT: Final = "https://espace-client.soregies.fr/eclips/api/public/"
 # --- Points d'entrée utilisés ------------------------------------------------
 EP_CUSTOMER_DATA: Final = "customer-data"
 EP_CHART_DATA: Final = "chart-data"
+EP_CHART_PIE: Final = "chart-pie-data"
+EP_COMPARE_FOYER: Final = "comparer-conso-foyer"
 EP_REGISTERS: Final = "load-customer-registers"
 EP_INSTANT: Final = "load-customer-instant"
 EP_HISTORIQUES: Final = "historiques"

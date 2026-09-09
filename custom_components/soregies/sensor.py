@@ -297,6 +297,45 @@ SENSORS: tuple[SoregiesSensorDescription, ...] = (
         value=lambda data, _: contract.invoiced_to if (contract := data.get("contract")) else None,
     ),
     SoregiesSensorDescription(
+        key="lifetime_total",
+        translation_key="lifetime_total",
+        device_class=SensorDeviceClass.ENERGY,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        icon="mdi:sigma",
+        value=lambda data, _: (
+            round(sum(lifetime.values()), 1) if (lifetime := data.get("lifetime")) else None
+        ),
+        attributes=lambda data, _: (
+            {POSTE_LABELS.get(c, c): round(v, 1) for c, v in lifetime.items()}
+            if (lifetime := data.get("lifetime"))
+            else {}
+        ),
+        available_for=lambda data: bool(data.get("lifetime")),
+    ),
+    SoregiesSensorDescription(
+        key="local_average_ratio",
+        translation_key="local_average_ratio",
+        native_unit_of_measurement="%",
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:home-group",
+        # Repère externe : il dit si une consommation est élevée en soi, ce
+        # qu'aucune série du foyer prise seule ne peut établir.
+        value=lambda data, _: (
+            round(compare["ratio"] * 100) if (compare := data.get("comparison")) else None
+        ),
+        attributes=lambda data, _: (
+            {
+                "mois": compare.get("label"),
+                "ma_consommation": compare.get("mine"),
+                "moyenne_locale": compare.get("local_average"),
+                "unite": compare.get("unit"),
+            }
+            if (compare := data.get("comparison"))
+            else {}
+        ),
+        available_for=lambda data: data.get("comparison") is not None,
+    ),
+    SoregiesSensorDescription(
         key="token_expires_in",
         translation_key="token_expires_in",
         native_unit_of_measurement="j",

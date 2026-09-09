@@ -103,6 +103,8 @@ class SoregiesCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
             readings = await self.client.async_readings()
             curve = await self.client.async_load_curve()
+            lifetime = await self.client.async_lifetime_split()
+            comparison = await self.client.async_household_comparison()
         except SoregiesAuthError as err:
             raise ConfigEntryAuthFailed(str(err)) from err
         except SoregiesError as err:
@@ -120,6 +122,8 @@ class SoregiesCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "monthly": sorted(monthly, key=lambda d: d.day),
             "readings": readings,
             "curve": curve,
+            "lifetime": lifetime,
+            "comparison": comparison,
         }
 
     # -- Statistiques long terme ---------------------------------------------

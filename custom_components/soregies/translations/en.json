@@ -90,6 +90,12 @@
       },
       "token_expires_in": {
         "name": "Sign-in link expiry"
+      },
+      "lifetime_total": {
+        "name": "Total consumption since monitoring began"
+      },
+      "local_average_ratio": {
+        "name": "Ratio to local average"
       }
     }
   },

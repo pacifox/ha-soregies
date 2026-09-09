@@ -34,6 +34,8 @@ from aiohttp import ClientError, ClientSession
 from .const import (
     API_ROOT,
     EP_CHART_DATA,
+    EP_CHART_PIE,
+    EP_COMPARE_FOYER,
     EP_CUSTOMER_DATA,
     EP_HISTORIQUES,
     EP_INSTANT,
@@ -627,6 +629,110 @@ class SoregiesClient:
             if stamp is not None:
                 out.append((stamp, values[index]))
         return out
+
+    async def async_lifetime_split(self) -> dict[str, float]:
+        """Consommation cumulée depuis le début du suivi, par poste, en kWh.
+
+        Le portail attend les mêmes paramètres que `chart-data` mais les
+        **ignore** : quelle que soit la période demandée, il renvoie toujours le
+        même cumul. Vérifié sur quatre périodes différentes — 2024, 2025, 2026 et
+        un pas quotidien : réponses identiques à l'unité près.
+
+        Les valeurs sont en **wattheures**. L'API ne le déclare pas ; c'est établi
+        par recoupement — le total rendu vaut 17 435 866 pour un foyer dont la
+        somme des séries mensuelles fait 17 333 kWh. Le même nombre lu en kWh
+        serait la consommation d'un quartier, pas d'une maison.
+
+        Le point de départ n'est pas celui du contrat mais celui de la
+        souscription au suivi détaillé : le portail ne publie rien avant.
+        """
+        payload = await self._request(
+            "POST",
+            EP_CHART_PIE,
+            json_body={
+                "latestConsommationParams": {
+                    "quantityType": QUANTITY_POWER,
+                    "quantityUnit": UNIT_KWH,
+                    "timeStep": TIMESTEP_DAILY,
+                    "dateToConsommation": f"{date.today().isoformat()}T00:00:00.000Z",
+                }
+            },
+        )
+        out: dict[str, float] = {}
+        for part in payload.get("data") or []:
+            code = str(part.get("id") or "").upper()
+            value = _as_float(part.get("y"))
+            if code and value is not None:
+                out[code] = value / 1000
+        return out
+
+    async def async_household_comparison(self, month: date | None = None) -> dict[str, Any] | None:
+        """Compare la consommation du foyer à la moyenne locale.
+
+        Sans mois précisé, on remonte à partir du dernier mois **clos**, et on
+        recule tant que le portail ne sait pas répondre. Demander le mois en
+        cours échoue (vérifié : septembre 2026 ne renvoie rien, août renvoie
+        juin) — la comparaison entre foyers accuse environ deux mois de retard,
+        et prendre `date.today()` pour point de départ ne rendrait donc jamais
+        rien.
+
+        Le mois retourné est celui que le portail a **effectivement** comparé,
+        jamais celui demandé : afficher une valeur de juin sous l'étiquette
+        d'août serait faux.
+
+        Renvoie `None` quand la comparaison n'existe pas pour ce contrat.
+        """
+        if month is not None:
+            return await self._async_comparison_for(month)
+        # Un mois clos, puis les précédents : la profondeur couvre le retard
+        # observé sans multiplier les requêtes quand le premier essai aboutit.
+        cursor = date.today().replace(day=1) - timedelta(days=1)
+        for _ in range(4):
+            result = await self._async_comparison_for(cursor)
+            if result is not None:
+                return result
+            cursor = cursor.replace(day=1) - timedelta(days=1)
+        return None
+
+    async def _async_comparison_for(self, anchor: date) -> dict[str, Any] | None:
+        """Interroge le comparateur pour un mois donné."""
+        try:
+            payload = await self._request(
+                "POST",
+                EP_COMPARE_FOYER,
+                json_body={
+                    "comparerParams": {
+                        "periodicity": "monthly",
+                        "unit": UNIT_KWH,
+                        "endMonth": f"{anchor.year:04d}-{anchor.month:02d}",
+                        "region": None,
+                    }
+                },
+            )
+        except SoregiesApiError as err:
+            _LOGGER.debug("Comparaison entre foyers indisponible : %s", err)
+            return None
+
+        data = payload.get("data") or {}
+        values = {
+            str(v.get("name") or ""): _as_float(v.get("totalValue"))
+            for v in data.get("values") or []
+        }
+        # Les séries sont nommées en clair et en français. On les rattache par
+        # mot-clef et non par position : `displayOrder` vaut 1 puis 3, ce qui
+        # laisse penser qu'une série intermédiaire peut apparaître.
+        mine = next((v for k, v in values.items() if "ma consommation" in k.lower()), None)
+        average = next((v for k, v in values.items() if "moyenne" in k.lower()), None)
+        if mine is None or not average:
+            return None
+        return {
+            "label": data.get("label"),
+            "month": _parse_date(data.get("endMonth")),
+            "mine": mine,
+            "local_average": average,
+            "ratio": mine / average,
+            "unit": data.get("unit") or UNIT_KWH,
+        }
 
     async def async_history(self) -> list[dict[str, Any]]:
         """Journal des demandes et évènements du compte."""

@@ -107,6 +107,8 @@ fraîche : l'historique déjà importé est conservé.
 | Abonnement annuel | EUR/an | |
 | Index du compteur | kWh | dernier relevé facturé, index par poste en attributs |
 | Consommation facturée jusqu'au | date | limite de la période déjà facturée |
+| Consommation totale depuis le suivi | kWh | cumul de tout ce que le portail publie, HP-HC en attributs |
+| Rapport à la moyenne locale | % | votre consommation rapportée à celle des foyers voisins |
 | Expiration du lien de connexion | j | jours restants avant renouvellement |
 | État du contrat | | référence, adresse, distributeur, option HP/HC en attributs |
 
@@ -229,6 +231,42 @@ data:
 
 Relit la consommation mois par mois et réécrit les statistiques. Sans risque de
 doublon : les points existants sont remplacés, pas ajoutés.
+
+## Ce que l'API du portail expose, et ce qui est utilisé
+
+Le bundle du portail déclare **33 points d'entrée**. Ils ont tous été relevés ;
+seuls ceux en lecture ont été sondés, et l'intégration en utilise sept.
+
+| Point d'entrée | État | Ce qu'il donne |
+|---|---|---|
+| `customer-data` | **utilisé** | contrat, compteur, abonnements de publication, jeton de session |
+| `chart-data` | **utilisé** | consommation par pas mensuel / quotidien / horaire, ventilée HP-HC |
+| `load-customer-registers` | **utilisé** | index du compteur réellement facturés |
+| `chart-pie-data` | **utilisé** | cumul depuis le début du suivi (en Wh, et la période demandée est ignorée) |
+| `comparer-conso-foyer` | **utilisé** | comparaison à la moyenne locale, avec ~2 mois de retard |
+| `load-customer-instant` | **utilisé** | courbe de charge — vide sur beaucoup de contrats |
+| `historiques` | **utilisé** | journal des demandes du compte |
+| `comparer-conso` | écarté | total d'une période ; n'accepte que `periodicity: daily` + `endDate`, et son `label` vaut « Invalid date ». Redondant avec `chart-data` |
+| `customer-conso` | indisponible | répond 500 quels que soient les paramètres |
+| `subscriptions`, `subscription-contacts` | indisponible | `OPERA-501` : non provisionné |
+| `email-mobile-alert-consumption` | indisponible | 404 sans alerte configurée |
+| `load-objectif-active-alert` | vide | `null` en l'absence d'objectif défini |
+| `virtual-battery-chart` | indisponible | `ERR_CURVE_NOTFOUND` : suppose une courbe de charge publiée |
+| `surveiller-conso-graph` | indisponible | `ERR_INVALID_INTERVAL` |
+| `download-csv-customer-registers` | indisponible | 404 ou 504 selon le `type` |
+
+Les **prix ne viennent d'aucun de ces points** : `quantityUnit: "euro"` est
+refusé. La grille est portée par le jeton de session lui-même
+(`amendments[].pricing`), d'où l'abonnement annuel, les prix HP et HC, la CTA,
+l'accise et la TVA — tous exposés en capteurs.
+
+Les points qui **modifient** le compte n'ont volontairement jamais été appelés,
+et l'intégration ne les appellera pas : `add-demande-client`,
+`email-mobile-alert-consumption/edit`, `subscribe-report`, `stop-report`,
+`stop-report-objectif-conso`, `objectif-conso-action`, `POST subscriptions`,
+`terminate-subscription`, `register`, `update-many-prospect`,
+`prospects-cloture-compte`. Une intégration de suivi lit ; elle ne résilie pas
+un contrat.
 
 ## Limites connues
 

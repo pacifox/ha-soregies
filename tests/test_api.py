@@ -219,3 +219,90 @@ def test_month_range_sur_un_seul_mois():
 def test_month_range_traverse_une_annee_bissextile():
     months = month_range(date(2024, 1, 31), date(2024, 3, 1))
     assert months == [date(2024, 1, 1), date(2024, 2, 1), date(2024, 3, 1)]
+
+
+# --- Cumul depuis le début du suivi -----------------------------------------
+
+# Réponse réelle de `chart-pie-data`. Les valeurs sont en wattheures, ce que
+# l'API ne déclare nulle part : le test fige cette interprétation, faute de
+# quoi une lecture en kWh donnerait 17 millions de kWh sans alerter personne.
+PIE = {
+    "isOk": True,
+    "data": [
+        {"id": "HC", "name": "Heures creuses", "y": 5454987, "color": "#a8b6d1"},
+        {"id": "HP", "name": "Heures pleines", "y": 11980879, "color": "#002f87"},
+    ],
+}
+
+
+def test_pie_est_converti_de_wh_en_kwh():
+    out = {}
+    for part in PIE["data"]:
+        out[part["id"]] = part["y"] / 1000
+    assert out == pytest.approx({"HC": 5454.987, "HP": 11980.879})
+    assert sum(out.values()) == pytest.approx(17435.866)
+
+
+# --- Comparaison à la moyenne locale ----------------------------------------
+
+# Réponse réelle de `comparer-conso-foyer`. Noter `displayOrder` 1 puis 3 : le
+# rattachement se fait par libellé, pas par position.
+FOYER = {
+    "isOk": True,
+    "data": {
+        "unit": "kWh",
+        "endMonth": "2026-06-30",
+        "label": "juin 2026",
+        "maxTotalValue": 702.64,
+        "values": [
+            {"name": "Ma consommation", "totalValue": 702.64, "displayOrder": 1},
+            {"name": "Moyenne locale", "totalValue": 342, "displayOrder": 3},
+        ],
+    },
+}
+
+
+def _extraire_comparaison(payload):
+    data = payload.get("data") or {}
+    values = {str(v.get("name") or ""): v.get("totalValue") for v in data.get("values") or []}
+    mine = next((v for k, v in values.items() if "ma consommation" in k.lower()), None)
+    average = next((v for k, v in values.items() if "moyenne" in k.lower()), None)
+    if mine is None or not average:
+        return None
+    return {
+        "label": data.get("label"),
+        "mine": mine,
+        "local_average": average,
+        "ratio": mine / average,
+    }
+
+
+def test_comparaison_rattache_les_series_par_libelle():
+    out = _extraire_comparaison(FOYER)
+    assert out["mine"] == pytest.approx(702.64)
+    assert out["local_average"] == pytest.approx(342)
+    assert out["ratio"] == pytest.approx(2.0545, abs=1e-4)
+
+
+def test_comparaison_conserve_le_mois_rendu_et_non_le_mois_demande():
+    # Le portail répond « juin 2026 » à une demande d'août : c'est son mois
+    # qu'il faut afficher, sinon la valeur porte une étiquette fausse.
+    assert _extraire_comparaison(FOYER)["label"] == "juin 2026"
+
+
+def test_comparaison_absente_si_la_moyenne_manque():
+    tronque = {"data": {"values": [{"name": "Ma consommation", "totalValue": 702.64}]}}
+    assert _extraire_comparaison(tronque) is None
+
+
+def test_comparaison_absente_si_moyenne_nulle():
+    # Une moyenne à zéro produirait une division par zéro, pas un ratio infini.
+    zero = {
+        "data": {
+            "values": [
+                {"name": "Ma consommation", "totalValue": 702.64},
+                {"name": "Moyenne locale", "totalValue": 0},
+            ]
+        }
+    }
+    assert _extraire_comparaison(zero) is None

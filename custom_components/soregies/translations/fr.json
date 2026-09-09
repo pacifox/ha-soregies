@@ -90,6 +90,12 @@
       },
       "token_expires_in": {
         "name": "Expiration du lien de connexion"
+      },
+      "lifetime_total": {
+        "name": "Consommation totale depuis le suivi"
+      },
+      "local_average_ratio": {
+        "name": "Rapport à la moyenne locale"
       }
     }
   },
