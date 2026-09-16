@@ -1,5 +1,7 @@
 # Sorégies pour Home Assistant
 
+[![ko-fi](https://img.shields.io/badge/Ko--fi-donate-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/pacifox)
+
 Intégration non officielle de l'espace client [Sorégies](https://www.soregies.fr/)
 (régie d'électricité de la Vienne, application « Eclips »). Elle importe la
 consommation **facturée** du point de livraison — heures pleines, heures
