@@ -417,7 +417,7 @@ class SoregiesSensor(CoordinatorEntity[SoregiesCoordinator], SensorEntity):
             name=f"Sorégies {identifier}",
             model=contract.meter_type if contract else None,
             serial_number=contract.contract_line_id if contract else None,
-            configuration_url="https://espace-client.soregies.fr/",
+            configuration_url="https://mon-espace-client.soregies.fr/",
         )
 
     @property

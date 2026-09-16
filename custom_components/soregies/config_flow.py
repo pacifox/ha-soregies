@@ -104,7 +104,7 @@ class SoregiesConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=TOKEN_SCHEMA,
             errors=errors,
-            description_placeholders={"portal": "https://espace-client.soregies.fr/"},
+            description_placeholders={"portal": "https://mon-espace-client.soregies.fr/"},
         )
 
     async def async_step_reauth(self, entry_data: Mapping[str, Any]) -> ConfigFlowResult:
@@ -136,7 +136,7 @@ class SoregiesConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="reauth_confirm",
             data_schema=TOKEN_SCHEMA,
             errors=errors,
-            description_placeholders={"portal": "https://espace-client.soregies.fr/"},
+            description_placeholders={"portal": "https://mon-espace-client.soregies.fr/"},
         )
 
     @staticmethod

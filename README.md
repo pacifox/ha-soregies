@@ -76,13 +76,14 @@ votre configuration, puis redémarrez Home Assistant.
 
 ## Configuration : récupérer le jeton en trois gestes
 
-Le portail `espace-client.soregies.fr` **n'a pas de connexion par mot de
-passe** : on n'y accède que par un lien signé. L'intégration ne vous demande
-donc jamais votre mot de passe, et n'en conserve aucun.
+Le lien de suivi de consommation (`espace-client.soregies.fr`) **n'a pas de
+connexion par mot de passe** : on n'y accède que par un lien signé, délivré
+par le vrai portail client. L'intégration ne vous demande donc jamais votre
+mot de passe, et n'en conserve aucun.
 
-1. Connectez-vous normalement sur [soregies.fr](https://www.soregies.fr/)
-2. Ouvrez **Suivi de consommation** — vous arrivez sur une adresse de la forme
-   `https://espace-client.soregies.fr/?access_token=eyJ…`
+1. Connectez-vous sur [mon-espace-client.soregies.fr](https://mon-espace-client.soregies.fr/)
+2. Cliquez sur **Voir ma conso** — un nouvel onglet s'ouvre sur une adresse de
+   la forme `https://espace-client.soregies.fr/?access_token=eyJ…`
 3. Copiez la barre d'adresse entière et collez-la dans Home Assistant :
    **Paramètres → Appareils et services → Ajouter une intégration → Sorégies**
 
@@ -91,6 +92,11 @@ Assistant ouvre une alerte de maintenance avec la marche à suivre, et le
 capteur *Expiration du lien de connexion* décompte les jours restants — de quoi
 poser une automatisation de rappel. Renouveler consiste à recoller une adresse
 fraîche : l'historique déjà importé est conservé.
+
+**Envie de ne plus y penser ?** [`scripts/renew_token.py`](scripts/renew_token.py)
+reproduit ces trois gestes automatiquement à partir de vos identifiants —
+non officiel, voir son [README](scripts/README.md) pour les limites et
+l'installation.
 
 ## Entités
 
@@ -282,8 +288,11 @@ un contrat.
 * **Avenant sans tarif** — le portail publie parfois une période transitoire
   sans aucun prix. Les coûts sont alors calculés avec la dernière grille
   réellement tarifée, plutôt que valorisés à zéro.
-* **Renouvellement du jeton** — dix jours, sans automatisation possible : le
-  portail ne propose aucune authentification par identifiants.
+* **Renouvellement du jeton** — dix jours ; le portail lui-même ne propose
+  aucune authentification par identifiants sur `espace-client.soregies.fr`,
+  d'où le geste manuel décrit plus haut. [`scripts/renew_token.py`](scripts/renew_token.py)
+  l'automatise en s'appuyant sur l'API interne du vrai portail client
+  (`mon-espace-client.soregies.fr`), non documentée et susceptible de changer.
 
 ## Contribuer
 
