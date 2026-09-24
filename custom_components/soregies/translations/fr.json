@@ -113,6 +113,20 @@
           "description": "Nombre de mois à relire. La valeur des réglages est utilisée par défaut."
         }
       }
+    },
+    "update_token": {
+      "name": "Renouveler le jeton d'accès",
+      "description": "Remplace le jeton d'accès Eclips de l'entrée (renouvellement automatisé, par exemple par un script qui se connecte au portail).",
+      "fields": {
+        "token": {
+          "name": "Jeton",
+          "description": "Nouveau jeton d'accès (JWT) délivré par le portail Sorégies."
+        },
+        "entry_id": {
+          "name": "Contrat",
+          "description": "Entrée à mettre à jour. Facultatif s'il n'y en a qu'une."
+        }
+      }
     }
   },
   "issues": {

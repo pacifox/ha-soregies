@@ -57,9 +57,11 @@ def async_check_token_expiry(hass: HomeAssistant, entry_id: str, expiry: datetim
 
 async def async_create_fix_flow(hass: HomeAssistant, issue_id: str, data: dict[str, str] | None):
     """Renvoie vers la ré-authentification : c'est le seul geste à faire."""
-    from homeassistant.helpers import repairs
+    # ConfirmRepairFlow vit dans le composant repairs, pas dans homeassistant.helpers
+    # (l'import erroné faisait échouer le clic sur l'alerte : HTTP 500).
+    from homeassistant.components.repairs import ConfirmRepairFlow
 
     entry_id = (data or {}).get("entry_id")
     if entry_id and (entry := hass.config_entries.async_get_entry(entry_id)):
         entry.async_start_reauth(hass)
-    return repairs.ConfirmRepairFlow()
+    return ConfirmRepairFlow()

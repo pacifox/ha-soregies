@@ -113,6 +113,20 @@
           "description": "Number of months to read back. Defaults to the configured value."
         }
       }
+    },
+    "update_token": {
+      "name": "Renew access token",
+      "description": "Replaces the entry's Eclips access token (automated renewal, e.g. by a script that logs in to the portal).",
+      "fields": {
+        "token": {
+          "name": "Token",
+          "description": "New access token (JWT) issued by the Sorégies portal."
+        },
+        "entry_id": {
+          "name": "Contract",
+          "description": "Entry to update. Optional when there is only one."
+        }
+      }
     }
   },
   "issues": {
