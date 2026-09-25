@@ -12,26 +12,28 @@ procédure manuelle décrite dans l'intégration reste le repli qui marche
 toujours.
 
 Prérequis :
-  - Être exécuté dans un environnement où /config est accessible en lecture
-    et en écriture EXACTEMENT comme le voit Home Assistant lui-même. C'est le
-    cas typique de l'add-on « Terminal & SSH » sur Home Assistant OS/Supervised,
-    ou d'une installation Docker/venv où /config est monté ou pointe vers le
-    même dossier que le conteneur `homeassistant`. Une installation où ce
-    script tourne sur une autre machine que Home Assistant devra adapter la
-    lecture/écriture du fichier de stockage à sa propre topologie (voir le
-    commentaire ATTEINDRE_CONFIG ci-dessous).
-  - Un jeton d'accès longue durée Home Assistant (profil → Sécurité), pour
-    recharger l'intégration après écriture sans redémarrer tout Home Assistant.
+  - Intégration Sorégies 1.0.1 ou plus récente (recommandé) : le script passe
+    alors le jeton par le service `soregies.update_token`, pris en compte
+    immédiatement, sans redémarrage. Il peut tourner sur N'IMPORTE QUELLE
+    machine qui joint Home Assistant en HTTP : seuls HA_URL et un jeton
+    d'accès longue durée sont nécessaires.
+  - Intégration 1.0.0 (repli) : le service n'existe pas. Le script écrit alors
+    le jeton dans /config/.storage, ce qui exige de voir /config exactement
+    comme Home Assistant le voit (add-on « Terminal & SSH », ou même hôte que
+    le conteneur `homeassistant`), et le jeton n'est pris en compte qu'au
+    PROCHAIN REDÉMARRAGE de Home Assistant. Mettez plutôt l'intégration à jour.
+  - Un jeton d'accès longue durée Home Assistant (profil → Sécurité).
 
 Variables d'environnement (voir .env.example dans ce dossier) :
   SOREGIES_EMAIL, SOREGIES_PASSWORD   identifiants du portail client Sorégies
   HA_URL                              ex. http://localhost:8123 ou http://homeassistant.local:8123
   HA_LONG_LIVED_TOKEN                 jeton d'accès longue durée Home Assistant
-  HA_STORAGE_DIR                      dossier .storage de Home Assistant, par
-                                       défaut /config/.storage (ATTEINDRE_CONFIG)
+  HA_STORAGE_DIR                      repli uniquement (intégration 1.0.0) : dossier
+                                       .storage de Home Assistant, par défaut
+                                       /config/.storage (ATTEINDRE_CONFIG)
 
 Exemple de minuteur (add-on Terminal & SSH, cron dans le conteneur) :
-  0 6 */8 * *  cd /config/scripts && ./renew_token.py >> /config/soregies-renew.log 2>&1
+  0 6 */5 * *  cd /config/scripts && ./renew_token.py >> /config/soregies-renew.log 2>&1
 """
 
 from __future__ import annotations
@@ -103,7 +105,8 @@ def fetch_eclips_token(email: str, password: str) -> tuple[str, dict]:
 
 def update_storage(storage_dir: Path, token: str) -> str:
     """Écrit le nouveau jeton dans core.config_entries. Renvoie l'entry_id
-    modifié. ATTEINDRE_CONFIG : si votre script tourne ailleurs que sur
+    modifié. Repli pour l'intégration 1.0.0 uniquement.
+    ATTEINDRE_CONFIG : si votre script tourne ailleurs que sur
     l'hôte Home Assistant, remplacez ce bloc par la méthode qui atteint
     votre propre installation (SSH vers l'hôte, appel à votre système de
     fichiers réseau, etc.) — la structure JSON manipulée reste la même."""
@@ -128,13 +131,27 @@ def update_storage(storage_dir: Path, token: str) -> str:
     return entry["entry_id"]
 
 
-def reload_config_entry(ha_url: str, ha_token: str, entry_id: str) -> None:
+def update_token_service(ha_url: str, ha_token: str, token: str) -> bool:
+    """Transmet le jeton par le service soregies.update_token (intégration >= 1.0.1).
+
+    L'entrée de configuration vit en mémoire dans Home Assistant : c'est la seule
+    façon de faire prendre le nouveau jeton sans redémarrage. Renvoie False si
+    le service n'existe pas (intégration plus ancienne)."""
+    base = ha_url.rstrip("/")
+    headers = {"Authorization": f"Bearer {ha_token}"}
+    services = requests.get(f"{base}/api/services", headers=headers, timeout=30)
+    services.raise_for_status()
+    domain = next((d for d in services.json() if d.get("domain") == "soregies"), {})
+    if "update_token" not in domain.get("services", {}):
+        return False
     resp = requests.post(
-        f"{ha_url.rstrip('/')}/api/config/config_entries/entry/{entry_id}/reload",
-        headers={"Authorization": f"Bearer {ha_token}"},
-        timeout=30,
+        f"{base}/api/services/soregies/update_token",
+        headers=headers,
+        json={"token": token},
+        timeout=60,
     )
     resp.raise_for_status()
+    return True
 
 
 def main() -> None:
@@ -142,19 +159,25 @@ def main() -> None:
     password = env("SOREGIES_PASSWORD")
     ha_url = env("HA_URL")
     ha_token = env("HA_LONG_LIVED_TOKEN")
-    storage_dir = Path(env("HA_STORAGE_DIR", "/config/.storage"))
 
     print("→ Connexion au portail Sorégies…")
     token, payload = fetch_eclips_token(email, password)
     expiry = datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
     print(f"→ Nouveau jeton obtenu, contrat {payload['data']['contractLineId']}, expire le {expiry:%Y-%m-%d %H:%M} UTC")
 
-    entry_id = update_storage(storage_dir, token)
+    print("→ Transmission du jeton à Home Assistant (service soregies.update_token)…")
+    if update_token_service(ha_url, ha_token, token):
+        print("✔ Terminé : jeton appliqué immédiatement, sans redémarrage.")
+        return
 
-    print("→ Rechargement de l'intégration (sans redémarrage de Home Assistant)…")
-    reload_config_entry(ha_url, ha_token, entry_id)
-
-    print("✔ Terminé.")
+    # Repli pour l'intégration 1.0.0. Recharger l'entrée ne suffit pas : Home
+    # Assistant garde l'entrée en mémoire et ne relit .storage qu'au démarrage.
+    print("⚠ Service soregies.update_token absent (intégration 1.0.0) :")
+    print("  repli sur l'écriture de .storage.")
+    storage_dir = Path(env("HA_STORAGE_DIR", "/config/.storage"))
+    update_storage(storage_dir, token)
+    print("✔ Jeton écrit. Il ne sera pris en compte qu'au prochain redémarrage de Home Assistant :")
+    print("  mettez l'intégration à jour (1.0.1 ou plus) pour éviter ce redémarrage.")
 
 
 if __name__ == "__main__":
