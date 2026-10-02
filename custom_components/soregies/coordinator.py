@@ -40,6 +40,7 @@ from .api import (
     SoregiesClient,
     SoregiesError,
     Tariff,
+    drop_implausible_days,
     month_range,
 )
 from .const import DOMAIN, POSTE_LABELS, UPDATE_INTERVAL
@@ -68,6 +69,7 @@ class SoregiesCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         entry_id: str,
         history_months: int,
         cost_with_vat: bool,
+        tax_per_kwh: float | None = None,
     ) -> None:
         super().__init__(
             hass,
@@ -79,6 +81,8 @@ class SoregiesCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.entry_id = entry_id
         self.history_months = history_months
         self.cost_with_vat = cost_with_vat
+        # Accise saisie à la main (None = valeur publiée par le portail).
+        self.tax_per_kwh = tax_per_kwh
         self.contract: Contract | None = None
         self._full_import_done = False
 
@@ -182,6 +186,20 @@ class SoregiesCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if not days:
             return
 
+        # Garde-fou : une journée au-dessus de la puissance souscrite x 24 h est une
+        # régularisation du portail, pas une consommation. On l'écarte et on le dit.
+        reference = self.pricing_tariff(contract, days[-1].day)
+        days, dropped = drop_implausible_days(days, reference.power_kva if reference else None)
+        for bad in dropped:
+            _LOGGER.warning(
+                "Journée du %s ignorée : %.0f kWh dépasse le maximum possible pour l'abonnement "
+                "(probable régularisation d'index du portail)",
+                bad.day,
+                bad.total,
+            )
+        if not days:
+            return
+
         window_start = replace_from or days[0].day
         postes = sorted({code for day in days for code in day.postes})
 
@@ -199,7 +217,13 @@ class SoregiesCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     continue
                 columns[code].append((day.day, value))
                 total += value
-                price = tariff.unit_price(code, with_vat=self.cost_with_vat) if tariff else None
+                price = (
+                    tariff.unit_price(
+                        code, with_vat=self.cost_with_vat, tax_override=self.tax_per_kwh
+                    )
+                    if tariff
+                    else None
+                )
                 if price is not None:
                     cost = value * price
                     costs[code].append((day.day, cost))

@@ -21,6 +21,7 @@ from .api import SoregiesAuthError, SoregiesClient, SoregiesError, decode_jwt_pa
 from .const import (
     CONF_ACCESS_TOKEN,
     CONF_HISTORY_MONTHS,
+    CONF_TAX_PER_KWH,
     DEFAULT_HISTORY_MONTHS,
     DOMAIN,
     MAX_HISTORY_MONTHS,
@@ -63,6 +64,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SoregiesConfigEntry) -> 
         entry_id=entry.entry_id,
         history_months=entry.options.get(CONF_HISTORY_MONTHS, DEFAULT_HISTORY_MONTHS),
         cost_with_vat=entry.options.get(CONF_COST_WITH_VAT, True),
+        tax_per_kwh=entry.options.get(CONF_TAX_PER_KWH),
     )
 
     try:

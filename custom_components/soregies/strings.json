@@ -35,11 +35,13 @@
         "description": "L'historique est importé sous forme de statistiques `soregies:`. Elles ne sont pas rattachées d'office au tableau de bord Énergie, pour ne pas s'additionner à un compteur déjà déclaré.",
         "data": {
           "history_months": "Profondeur d'historique à importer",
-          "cost_with_vat": "Calculer les coûts TVA comprise"
+          "cost_with_vat": "Calculer les coûts TVA comprise",
+          "tax_per_kwh": "Accise sur l'électricité (€/kWh)"
         },
         "data_description": {
           "history_months": "Nombre de mois relus lors d'un import complet. Le portail ne remonte pas avant le début du contrat.",
-          "cost_with_vat": "Désactivez cette option pour obtenir des montants hors taxes."
+          "cost_with_vat": "Désactivez cette option pour obtenir des montants hors taxes.",
+          "tax_per_kwh": "Laissez vide pour utiliser la valeur publiée par le portail. À renseigner si elle diffère de votre facture (lisez « Accise sur l'électricité » : environ 0,0306 €/kWh en 2026). Corrige le coût des statistiques et le prix moyen du kWh."
         }
       }
     }

@@ -42,6 +42,7 @@ from .api import (
 from .const import (
     CONF_ACCESS_TOKEN,
     CONF_HISTORY_MONTHS,
+    CONF_TAX_PER_KWH,
     DEFAULT_HISTORY_MONTHS,
     DOMAIN,
     MAX_HISTORY_MONTHS,
@@ -150,12 +151,14 @@ class SoregiesOptionsFlow(OptionsFlow):
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
-            return self.async_create_entry(
-                data={
-                    CONF_HISTORY_MONTHS: int(user_input[CONF_HISTORY_MONTHS]),
-                    CONF_COST_WITH_VAT: user_input[CONF_COST_WITH_VAT],
-                }
-            )
+            data: dict[str, Any] = {
+                CONF_HISTORY_MONTHS: int(user_input[CONF_HISTORY_MONTHS]),
+                CONF_COST_WITH_VAT: user_input[CONF_COST_WITH_VAT],
+            }
+            # Champ vide = on garde la valeur publiée par le portail.
+            if user_input.get(CONF_TAX_PER_KWH) not in (None, ""):
+                data[CONF_TAX_PER_KWH] = float(user_input[CONF_TAX_PER_KWH])
+            return self.async_create_entry(data=data)
 
         options = self.config_entry.options
         return self.async_show_form(
@@ -178,6 +181,18 @@ class SoregiesOptionsFlow(OptionsFlow):
                         CONF_COST_WITH_VAT,
                         default=options.get(CONF_COST_WITH_VAT, True),
                     ): BooleanSelector(),
+                    vol.Optional(
+                        CONF_TAX_PER_KWH,
+                        description={"suggested_value": options.get(CONF_TAX_PER_KWH)},
+                    ): NumberSelector(
+                        NumberSelectorConfig(
+                            min=0,
+                            max=0.2,
+                            step=0.00001,
+                            mode=NumberSelectorMode.BOX,
+                            unit_of_measurement="€/kWh",
+                        )
+                    ),
                 }
             ),
         )

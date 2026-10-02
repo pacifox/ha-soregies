@@ -35,11 +35,13 @@
         "description": "History is imported as `soregies:` statistics. They are not wired into the Energy dashboard automatically, so they cannot add up on top of a meter you already declared.",
         "data": {
           "history_months": "History depth to import",
-          "cost_with_vat": "Compute costs including VAT"
+          "cost_with_vat": "Compute costs including VAT",
+          "tax_per_kwh": "Electricity excise tax (€/kWh)"
         },
         "data_description": {
           "history_months": "Number of months read back during a full import. The portal never returns data from before the contract started.",
-          "cost_with_vat": "Turn this off for amounts excluding tax."
+          "cost_with_vat": "Turn this off for amounts excluding tax.",
+          "tax_per_kwh": "Leave empty to use the value published by the portal. Fill it in if it differs from your bill (see the line 'Accise sur l'électricité'; about 0.0306 €/kWh in 2026). Corrects the cost statistics and the average price per kWh."
         }
       }
     }

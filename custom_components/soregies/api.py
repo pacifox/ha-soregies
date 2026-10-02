@@ -149,7 +149,12 @@ class Tariff:
         return "HP" in self.postes and "HC" in self.postes
 
     def unit_price(
-        self, poste: str, *, with_tax: bool = True, with_vat: bool = False
+        self,
+        poste: str,
+        *,
+        with_tax: bool = True,
+        with_vat: bool = False,
+        tax_override: float | None = None,
     ) -> float | None:
         """Prix d'un kWh pour un poste donné.
 
@@ -163,7 +168,10 @@ class Tariff:
             return None
         price = entry.price_kwh
         if with_tax:
-            price += self.tax_per_kwh
+            # `tax_override` : accise saisie à la main. Le portail publie parfois une valeur
+            # périmée (0,021 €/kWh observé en 2026, alors que les factures appliquent
+            # ~0,0306) ; sans réglage, on garde la valeur du portail.
+            price += self.tax_per_kwh if tax_override is None else tax_override
         if with_vat:
             price *= 1 + self.vat_kwh
         return price
@@ -229,6 +237,36 @@ class DayConsumption:
     @property
     def total(self) -> float:
         return sum(self.postes.values())
+
+
+# Plafond de consommation d'une journée quand la puissance souscrite est inconnue.
+MAX_DAILY_KWH_FALLBACK = 600.0
+
+
+def daily_ceiling_kwh(power_kva: float | None) -> float:
+    """Plus grosse consommation physiquement possible en une journée.
+
+    Un abonnement de P kVA ne peut pas débiter plus de P x 24 kWh par jour ; on
+    garde 10 % de marge. Sans puissance connue, plafond fixe très large.
+    """
+    if power_kva and power_kva > 0:
+        return power_kva * 24 * 1.1
+    return MAX_DAILY_KWH_FALLBACK
+
+
+def drop_implausible_days(
+    days: list[DayConsumption], power_kva: float | None
+) -> tuple[list[DayConsumption], list[DayConsumption]]:
+    """Sépare les jours plausibles de ceux qui dépassent le plafond physique.
+
+    Cas réel (2 août 2026) : le portail a publié 1 577 kWh sur une journée, une
+    régularisation d'index, pour un abonnement de 9 kVA (maximum possible : 216 kWh).
+    Importée telle quelle, elle faussait toutes les statistiques et le tableau Énergie.
+    """
+    ceiling = daily_ceiling_kwh(power_kva)
+    kept = [d for d in days if d.total <= ceiling]
+    dropped = [d for d in days if d.total > ceiling]
+    return kept, dropped
 
 
 @dataclass(slots=True)

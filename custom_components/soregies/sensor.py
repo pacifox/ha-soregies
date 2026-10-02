@@ -132,7 +132,9 @@ def _average_price(data: dict[str, Any], coordinator: SoregiesCoordinator) -> fl
         if tariff is None:
             return None
         for code, value in day.postes.items():
-            price = tariff.unit_price(code, with_vat=coordinator.cost_with_vat)
+            price = tariff.unit_price(
+                code, with_vat=coordinator.cost_with_vat, tax_override=coordinator.tax_per_kwh
+            )
             if price is None:
                 return None
             cost += value * price
@@ -148,7 +150,9 @@ def _current_price(
     tariff = coordinator.pricing_tariff(contract, dt_util.now().date())
     if tariff is None:
         return None
-    return tariff.unit_price(code, with_vat=coordinator.cost_with_vat)
+    return tariff.unit_price(
+        code, with_vat=coordinator.cost_with_vat, tax_override=coordinator.tax_per_kwh
+    )
 
 
 def _has_poste(data: dict[str, Any], code: str) -> bool:

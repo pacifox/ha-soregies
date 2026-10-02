@@ -306,3 +306,65 @@ def test_comparaison_absente_si_moyenne_nulle():
         }
     }
     assert _extraire_comparaison(zero) is None
+
+
+# --- Accise saisie à la main (v1.0.2) -----------------------------------------
+
+
+def test_prix_unitaire_avec_accise_saisie_a_la_main():
+    """Le portail publie 0,021 €/kWh, la facture applique ~0,0306 : le réglage prime."""
+    tariff = _parse_tariff(AVENANT_HPHC)
+    portail = tariff.unit_price("HP", with_vat=False)
+    saisie = tariff.unit_price("HP", with_vat=False, tax_override=0.03062)
+    assert saisie == pytest.approx(tariff.postes["HP"].price_kwh + 0.03062)
+    assert saisie > portail  # 0,03062 > 0,021
+    ttc = tariff.unit_price("HP", with_vat=True, tax_override=0.03062)
+    assert ttc == pytest.approx(saisie * 1.2)
+
+
+def test_prix_unitaire_sans_reglage_garde_la_valeur_du_portail():
+    tariff = _parse_tariff(AVENANT_HPHC)
+    assert tariff.unit_price("HP", with_vat=False, tax_override=None) == tariff.unit_price(
+        "HP", with_vat=False
+    )
+
+
+def test_accise_saisie_a_zero_est_respectee():
+    """Zéro est une valeur légitime : elle ne doit pas être confondue avec « non renseigné »."""
+    tariff = _parse_tariff(AVENANT_HPHC)
+    zero = tariff.unit_price("HP", with_vat=False, tax_override=0.0)
+    assert zero == pytest.approx(tariff.postes["HP"].price_kwh)
+
+
+# --- Garde-fou contre les journées impossibles (v1.0.2) -------------------------
+
+
+def _day(d: int, **postes: float):
+    return api.DayConsumption(day=date(2026, 8, d), postes=postes)
+
+
+def test_plafond_journalier_suit_la_puissance_souscrite():
+    assert api.daily_ceiling_kwh(9) == pytest.approx(9 * 24 * 1.1)
+    assert api.daily_ceiling_kwh(None) == api.MAX_DAILY_KWH_FALLBACK
+    assert api.daily_ceiling_kwh(0) == api.MAX_DAILY_KWH_FALLBACK
+
+
+def test_regularisation_du_2_aout_est_ecartee():
+    """Cas réel : 1 577 kWh en un jour pour 9 kVA (maximum possible 216 kWh)."""
+    days = [_day(1, HP=11, HC=6), _day(2, HP=996, HC=581), _day(3, HP=12, HC=2)]
+    kept, dropped = api.drop_implausible_days(days, 9)
+    assert [d.day.day for d in kept] == [1, 3]
+    assert [d.day.day for d in dropped] == [2]
+
+
+def test_journee_forte_mais_possible_est_conservee():
+    """200 kWh sur un abonnement 9 kVA reste physiquement possible : on ne l'écarte pas."""
+    kept, dropped = api.drop_implausible_days([_day(1, HP=150, HC=50)], 9)
+    assert len(kept) == 1
+    assert dropped == []
+
+
+def test_sans_puissance_connue_seul_le_plafond_fixe_s_applique():
+    kept, dropped = api.drop_implausible_days([_day(1, HP=300), _day(2, HP=1577)], None)
+    assert [d.day.day for d in kept] == [1]
+    assert [d.day.day for d in dropped] == [2]

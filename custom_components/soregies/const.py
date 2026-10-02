@@ -25,6 +25,7 @@ EP_HISTORIQUES: Final = "historiques"
 CONF_ACCESS_TOKEN: Final = "access_token"
 CONF_IMPORT_HISTORY: Final = "import_history"
 CONF_HISTORY_MONTHS: Final = "history_months"
+CONF_TAX_PER_KWH: Final = "tax_per_kwh"
 
 DEFAULT_HISTORY_MONTHS: Final = 36
 MAX_HISTORY_MONTHS: Final = 120
